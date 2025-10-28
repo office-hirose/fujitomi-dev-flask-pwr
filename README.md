@@ -1,10 +1,10 @@
 # Cloud RUN, build deploy
 
-gcloud config set project oh-prj-demo
+gcloud config set project oh-prj-xxxxx
 
-gcloud builds submit --tag gcr.io/oh-prj-demo/flask
+gcloud builds submit --tag gcr.io/oh-prj-xxxxx/flask
 
-gcloud run deploy --image gcr.io/oh-prj-demo/flask
+gcloud run deploy --image gcr.io/oh-prj-xxxxx/flask
 
 To make this the default region, run `gcloud config set run/region us-central1`
 
