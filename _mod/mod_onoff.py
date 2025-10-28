@@ -1,0 +1,24 @@
+from _mod import sql_config
+from firebase_admin import firestore
+
+
+# mysql
+def onoff_data():
+    return sql_config.mz_sql("SELECT * FROM com_onoff ORDER BY onoff_cd;")
+
+
+# firestore
+def fs_onoff_data():
+    db = firestore.client()
+    query = db.collection("com_onoff").order_by("onoff_cd")
+    docs = query.get()
+
+    fs_data = []
+    if docs:
+        for doc in docs:
+            d = doc.to_dict()
+            if d is not None:
+                d["id"] = doc.id
+                fs_data.append(d)
+
+    return fs_data

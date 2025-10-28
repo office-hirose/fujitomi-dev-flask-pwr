@@ -1,0 +1,215 @@
+
+あなたはプログラマーの先生です。
+
+MySQLについて教えて下さい。
+
+次のMySQLテーブルが２つあります。
+
+sql_order_store
+sql_nayose
+
+テーブルの構造は、どちらも同じです。下記のようになります。
+
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `fis_cd` varchar(255) NOT NULL DEFAULT '0',
+  `exe_sta` varchar(255) NOT NULL DEFAULT '',
+  `create_date` int(11) NOT NULL DEFAULT '0',
+  `keijyo_date` int(11) NOT NULL DEFAULT '0',
+  `ngw_keijyo_date` int(11) NOT NULL DEFAULT '0',
+  `keiyaku_cd` varchar(255) NOT NULL DEFAULT '',
+  `cat_cd` varchar(255) NOT NULL DEFAULT '',
+  `coltd_cd` varchar(255) NOT NULL DEFAULT '',
+  `syoken_cd_main` varchar(255) NOT NULL DEFAULT '',
+  `syoken_cd_sub` varchar(255) NOT NULL DEFAULT '',
+  `old_syoken_cd_main` varchar(255) NOT NULL DEFAULT '',
+  `old_syoken_cd_sub` varchar(255) NOT NULL DEFAULT '',
+  `mosikomi_cd` varchar(255) NOT NULL DEFAULT '',
+  `kind_cd_main` varchar(255) NOT NULL DEFAULT '',
+  `kind_cd_sub` varchar(255) NOT NULL DEFAULT '',
+  `pay_num_cd` varchar(255) NOT NULL DEFAULT '',
+  `hoken_kikan_cd` varchar(255) NOT NULL DEFAULT '',
+  `hoken_kikan_year` int(11) NOT NULL DEFAULT '0',
+  `siki_date` int(11) NOT NULL DEFAULT '0',
+  `manki_date` int(11) NOT NULL DEFAULT '0',
+  `hoken_ryo` int(11) NOT NULL DEFAULT '0',
+  `hoken_ryo_year` int(11) NOT NULL DEFAULT '0',
+  `ido_kai_date` int(11) NOT NULL DEFAULT '0',
+  `ido_kai_hoken_ryo` int(11) NOT NULL DEFAULT '0',
+  `section_cd` varchar(255) NOT NULL DEFAULT '',
+  `staff1_cd` varchar(255) NOT NULL DEFAULT '',
+  `staff2_cd` varchar(255) NOT NULL DEFAULT '',
+  `staff3_cd` varchar(255) NOT NULL DEFAULT '',
+  `gyotei1_cd` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `gyotei2_cd` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `gyotei3_cd` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `fee_staff1` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_staff2` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_staff3` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_gyotei1` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_gyotei2` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_gyotei3` decimal(11,1) NOT NULL DEFAULT '0.0',
+  `fee_memo` varchar(255) NOT NULL DEFAULT '',
+  `fee_cd` varchar(255) NOT NULL DEFAULT '',
+  `fee_cd_all` varchar(255) NOT NULL DEFAULT '',
+  `fee_cat` varchar(255) NOT NULL DEFAULT '',
+  `fee_ritu` int(11) NOT NULL DEFAULT '0',
+  `fee_seiho_kikan` int(11) NOT NULL DEFAULT '0',
+  `fee_seiho_first` int(11) NOT NULL DEFAULT '0',
+  `fee_seiho_next` int(11) NOT NULL DEFAULT '0',
+  `memo` varchar(255) NOT NULL DEFAULT '',
+  `hojin_kojin_cd` varchar(255) NOT NULL DEFAULT '0',
+  `cust_new_old_cd` varchar(255) NOT NULL DEFAULT '0',
+  `kei_name` varchar(255) NOT NULL DEFAULT '',
+  `kei_name_hira` varchar(255) NOT NULL DEFAULT '',
+  `kei_post` varchar(255) NOT NULL DEFAULT '',
+  `kei_address` varchar(255) NOT NULL DEFAULT '',
+  `kei_tel` varchar(255) NOT NULL DEFAULT '',
+  `bosyu_cd` varchar(255) NOT NULL DEFAULT '',
+  `search_text` varchar(600) NOT NULL DEFAULT '',
+  `kei_name_nospace` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `dup_sta` varchar(255) NOT NULL DEFAULT '' COMMENT '重複ではない場合 not_dup を入力',
+  `valid_cd` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `memo_json` json DEFAULT NULL,
+  `create_email` varchar(255) NOT NULL DEFAULT '',
+  `update_email` varchar(255) NOT NULL DEFAULT '',
+  `regi_email` varchar(255) NOT NULL DEFAULT '',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `regi_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`,`fis_cd`) USING BTREE
+
+これがリレーションするテーブル、3個です。
+
+-- sql_cat
+id int(11) unsigned NOT NULL AUTO_INCREMENT,
+onoff_cd varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+sort int(11) NOT NULL DEFAULT '0',
+cat_cd varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+cat_name varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+cat_name_simple varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+cat_bg_color varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+PRIMARY KEY (id) USING BTREE
+
+-- sql_section
+id int(11) NOT NULL AUTO_INCREMENT,
+onoff_cd varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+sort int(11) NOT NULL DEFAULT '0',
+section_cd varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+section_name varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+section_name_keiri varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+empty_staff_cd varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'mod_bosyuで使用中',
+style_color varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+style_border varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+PRIMARY KEY (id,section_cd) USING BTREE
+
+-- sql_hojin_kojin
+`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+`sort` int(11) DEFAULT NULL,
+`onoff_cd` int(11) DEFAULT NULL,
+`hojin_kojin_cd` varchar(255) NOT NULL COMMENT 'NTTGWがvarcharなので合わせた',
+`hojin_kojin_name` varchar(255) DEFAULT '',
+PRIMARY KEY (`id`) USING BTREE
+
+そして、これが私が書いたクエリです。
+
+-- 1. sql_nayoseのレコードを全て削除
+TRUNCATE TABLE sql_nayose;
+
+-- 2. sql_order_storeのデータをsql_nayoseにコピー
+INSERT INTO sql_nayose SELECT * FROM sql_order_store;
+
+-- 3. cat_cd='3'のレコードを削除
+DELETE FROM sql_nayose WHERE cat_cd = '3';
+
+-- 4. coltd_cd='FT'のレコードを削除
+DELETE FROM sql_nayose WHERE coltd_cd = 'FT';
+
+-- 5. kei_name='不明'のレコードを削除
+DELETE FROM sql_nayose WHERE kei_name = '不明';
+
+-- 6. manki_date != 0 AND manki_date < 20241201のレコードを削除
+DELETE FROM sql_nayose WHERE manki_date != 0 AND manki_date < 20241201;
+
+-- 7. syoken_cd_mainが'98'で始まらない、かつsyoken_cd_subが'0000'ではないレコードを削除
+DELETE FROM sql_nayose
+WHERE syoken_cd_main NOT LIKE '98%' AND syoken_cd_sub != '0000';
+
+-- 8. keiyaku_cd='6' or '7' or '8' or '9'のレコードのsyoken_cd_mainと同じsyoken_cd_mainを持つレコードを全て削除
+DELETE n FROM sql_nayose n
+INNER JOIN (
+    SELECT DISTINCT syoken_cd_main FROM sql_nayose WHERE keiyaku_cd IN ('6', '7', '8', '9')
+) k ON n.syoken_cd_main = k.syoken_cd_main;
+
+-- 9. 契約者名の重複ありの件数、cat_cd 別、section_cd 別、hoji_kojin_cd 別に件数を取得し、対応する名前を表示
+SELECT
+    c.cat_name_simple AS 分類,
+    s.section_name AS セクション,
+    h.hojin_kojin_name AS 法人個人,
+    COUNT(*) AS 契約者名重複あり件数
+FROM
+    sql_nayose n
+LEFT JOIN sql_cat c ON n.cat_cd = c.cat_cd
+LEFT JOIN sql_section s ON n.section_cd = s.section_cd
+LEFT JOIN sql_hojin_kojin h ON n.hojin_kojin_cd = h.hojin_kojin_cd
+GROUP BY
+    n.cat_cd,
+    c.cat_name_simple,
+    c.sort,
+    n.section_cd,
+    s.section_name,
+    s.sort,
+    n.hojin_kojin_cd,
+    h.hojin_kojin_name,
+    h.sort
+ORDER BY
+    c.sort,
+    s.sort,
+    h.sort;
+
+-- 10. 契約者名の重複レコードを削除、生保と損保は別に扱う
+DELETE n1 FROM sql_nayose n1
+JOIN (
+    SELECT MAX(id) as max_id, cat_cd, kei_name_nospace
+    FROM sql_nayose
+    GROUP BY cat_cd, kei_name_nospace
+    HAVING COUNT(*) > 1
+) dup
+ON n1.cat_cd = dup.cat_cd
+AND n1.kei_name_nospace = dup.kei_name_nospace
+AND n1.id < dup.max_id;
+
+-- 重複削除後の確認用
+SELECT cat_cd, kei_name_nospace, COUNT(*) as cnt
+FROM sql_nayose
+GROUP BY cat_cd, kei_name_nospace
+HAVING cnt > 1;
+
+-- 11. 契約者名の重複なしの件数、cat_cd 別、section_cd 別、hoji_kojin_cd 別に件数を取得し、対応する名前を表示
+SELECT
+    c.cat_name_simple AS 分類,
+    s.section_name AS セクション,
+    h.hojin_kojin_name AS 法人個人,
+    COUNT(*) AS 契約者名重複なし件数
+FROM
+    sql_nayose n
+LEFT JOIN sql_cat c ON n.cat_cd = c.cat_cd
+LEFT JOIN sql_section s ON n.section_cd = s.section_cd
+LEFT JOIN sql_hojin_kojin h ON n.hojin_kojin_cd = h.hojin_kojin_cd
+GROUP BY
+    n.cat_cd,
+    c.cat_name_simple,
+    c.sort,
+    n.section_cd,
+    s.section_name,
+    s.sort,
+    n.hojin_kojin_cd,
+    h.hojin_kojin_name,
+    h.sort
+ORDER BY
+    c.sort,
+    s.sort,
+    h.sort;
+
+-- レコード数を確認
+-- SELECT count(*) as sql_order_store_cnt FROM sql_order_store;
+-- SELECT count(*) as sql_nayose_cnt FROM sql_nayose;
