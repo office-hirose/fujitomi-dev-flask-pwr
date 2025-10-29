@@ -8,12 +8,11 @@
 # -------------------------------------------------------------------
 import sys
 import json
+import base64
+from email.mime.text import MIMEText
 from flask import request
-from _mod import fs_config, mod_base, mod_que, mod_datetime
+from _mod import fs_config, mod_base, mod_que, mod_datetime, mod_gmail_api
 from _mod_fis import mod_kei_nyu_pay, mod_staff, mod_task_sta
-
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 from fee import fee_cre_month_keiri_mod
 
@@ -104,9 +103,6 @@ def fee_cre_month_exe():
 
 
 def fee_cre_month_task():
-    # init, firestore
-    fs_dic = fs_config.fs_dic()
-
     # obj
     obj = request.get_json()
     js_obj = obj["js_obj"]
@@ -164,17 +160,27 @@ def fee_cre_month_task():
     body += "service : " + service + "\n"
     body += "\n"
 
-    # from, to
-    mail_con = Mail(
-        from_email=from_email,
-        to_emails=to_email,
-        subject=subject,
-        plain_text_content=body,
-    )
+    # Gmail APIでメール送信
+    service_gmail = mod_gmail_api.get_gmail_service()
+    if service_gmail is not None:
+        # メールメッセージを作成
+        message_obj = MIMEText(body, "plain", "utf-8")
+        message_obj["to"] = to_email
+        message_obj["from"] = from_email
+        message_obj["subject"] = subject
 
-    # send
-    sg = SendGridAPIClient(fs_dic["sendgrid_api_key"])
-    sg.send(mail_con)
+        # Base64エンコード
+        raw_message = base64.urlsafe_b64encode(message_obj.as_bytes()).decode("utf-8")
+
+        # メール送信
+        try:
+            result = service_gmail.users().messages().send(userId="me", body={"raw": raw_message}).execute()
+            print(f"fee_cre_month_keiri メール送信成功: {result}")
+        except Exception as e:
+            print(f"fee_cre_month_keiri メール送信エラー: {e}")
+            import traceback
+
+            print(f"fee_cre_month_keiri 詳細エラー: {traceback.format_exc()}")
 
     # task_sta update
     task_sta = "end"

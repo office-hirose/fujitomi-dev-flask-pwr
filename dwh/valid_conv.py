@@ -7,12 +7,11 @@
 # ------------------------------------------------------------------------
 import sys
 import json
+import base64
+from email.mime.text import MIMEText
 from flask import request
-from _mod import fs_config, mod_base, mod_que, mod_datetime, sql_config
+from _mod import fs_config, mod_base, mod_que, mod_datetime, sql_config, mod_gmail_api
 from _mod_fis import mod_order_store_log
-
-import sendgrid
-from sendgrid.helpers.mail import Email, Content, Mail, To
 
 
 def valid_conv():
@@ -78,9 +77,6 @@ def valid_conv_exe():
 
 
 def valid_conv_task():
-    # init, firestore
-    fs_dic = fs_config.fs_dic()
-
     # obj
     que_body = json.loads(request.data.decode("utf-8"))
     jwtg = que_body["jwtg"]
@@ -113,16 +109,27 @@ def valid_conv_task():
         body_data += "service : " + service + "\n"
         body_data += "\n"
 
-        # sendgrid
-        from_email = Email(from_email)
-        to_email = To(to_email)
-        subject = subject_data
-        content = Content("text/plain", body_data)
-        mail_con = Mail(from_email, to_email, subject, content)
+        # Gmail APIでメール送信
+        service_gmail = mod_gmail_api.get_gmail_service()
+        if service_gmail is not None:
+            # メールメッセージを作成
+            message_obj = MIMEText(body_data, "plain", "utf-8")
+            message_obj["to"] = to_email
+            message_obj["from"] = from_email
+            message_obj["subject"] = subject_data
 
-        # send
-        sg = sendgrid.SendGridAPIClient(fs_dic["sendgrid_api_key"])
-        sg.send(mail_con)
+            # Base64エンコード
+            raw_message = base64.urlsafe_b64encode(message_obj.as_bytes()).decode("utf-8")
+
+            # メール送信
+            try:
+                result = service_gmail.users().messages().send(userId="me", body={"raw": raw_message}).execute()
+                print(f"valid_conv メール送信成功: {result}")
+            except Exception as e:
+                print(f"valid_conv メール送信エラー: {e}")
+                import traceback
+
+                print(f"valid_conv 詳細エラー: {traceback.format_exc()}")
 
         # base - level 9 - access log only
         acc_page_name = sys._getframe().f_code.co_name

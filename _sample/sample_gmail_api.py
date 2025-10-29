@@ -214,7 +214,8 @@ def mz_attach(cat, customer_name, customer_email, subject, message, send_time):
     attachment = MIMEBase("application", "pdf")
     attachment.set_payload(content)
     encoders.encode_base64(attachment)
-    attachment.add_header("Content-Disposition", f"attachment; filename= {send_file_name}")
+    # 日本語ファイル名対応：RFC 2231形式でエンコード
+    attachment.add_header("Content-Disposition", "attachment", filename=("utf-8", "", send_file_name))
     message_obj.attach(attachment)
 
     # Base64エンコード

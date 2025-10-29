@@ -7,11 +7,11 @@
 import sys
 import json
 import datetime
+import base64
+from email.mime.text import MIMEText
 from flask import request
-from _mod import fs_config, mod_base, mod_que, mod_datetime, sql_config
+from _mod import fs_config, mod_base, mod_que, mod_datetime, sql_config, mod_gmail_api
 from _mod_fis import mod_staff
-import sendgrid
-from sendgrid.helpers.mail import Email, Content, Mail, To
 import time
 
 
@@ -89,9 +89,6 @@ def nttgw_email_exe():
 
 
 def nttgw_email_task():
-    # init, firestore
-    fs_dic = fs_config.fs_dic()
-
     # obj
     obj = request.get_json()
     js_obj = obj["js_obj"]
@@ -99,24 +96,36 @@ def nttgw_email_task():
 
     # value
     from_email = obj["sender_email"]
-    to_email = obj["user_email"]
 
     # subject, subject_body_html, email address data
     subject_data, body_data, subject_body_html = mz_nttgw_email_subject_body()
     address_data = mz_nttgw_email_address_data()
 
-    # send contents
-    from_email = Email(from_email)
-    subject = subject_data
-    content = Content("text/plain", body_data)
+    # Gmail APIでメール送信
+    service = mod_gmail_api.get_gmail_service()
+    if service is not None:
+        # send email
+        for to_email_address in address_data:
+            # メールメッセージを作成
+            message_obj = MIMEText(body_data, "plain", "utf-8")
+            message_obj["to"] = to_email_address
+            message_obj["from"] = from_email
+            message_obj["subject"] = subject_data
 
-    # send email
-    for v in address_data:
-        to_email = To(v)
-        mail_con = Mail(from_email, to_email, subject, content)
-        sg = sendgrid.SendGridAPIClient(fs_dic["sendgrid_api_key"])
-        sg.send(mail_con)
-        time.sleep(3.0)  # pause xx seconds
+            # Base64エンコード
+            raw_message = base64.urlsafe_b64encode(message_obj.as_bytes()).decode("utf-8")
+
+            # メール送信
+            try:
+                result = service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
+                print(f"nttgw_email メール送信成功 to {to_email_address}: {result}")
+            except Exception as e:
+                print(f"nttgw_email メール送信エラー to {to_email_address}: {e}")
+                import traceback
+
+                print(f"nttgw_email 詳細エラー: {traceback.format_exc()}")
+
+            time.sleep(3.0)  # pause xx seconds
 
     # base - level 9 - access log only
     acc_page_name = sys._getframe().f_code.co_name

@@ -11,18 +11,12 @@ from flask import request
 from google.cloud import storage
 import xlsxwriter
 import base64
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import (
-    Mail,
-    Attachment,
-    FileContent,
-    FileName,
-    FileType,
-    Disposition,
-    ContentId,
-)
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
-from _mod import fs_config, mod_base, mod_que, mod_datetime
+from _mod import fs_config, mod_base, mod_que, mod_datetime, mod_gmail_api
 from _mod_fis import mod_kei_nyu_pay, mod_staff, mod_task_sta, mod_xlsxwriter
 
 from fee import (
@@ -116,9 +110,6 @@ def fee_chk_exe():
 
 
 def fee_chk_task():
-    # init, firestore
-    fs_dic = fs_config.fs_dic()
-
     # obj
     obj = request.get_json()
     js_obj = obj["js_obj"]
@@ -187,32 +178,43 @@ def fee_chk_task():
     body += "service : " + service + "\n"
     body += "\n"
 
-    # from, to
-    mail_con = Mail(
-        from_email=from_email,
-        to_emails=to_email,
-        subject=subject,
-        plain_text_content=body,
-    )
+    # Gmail APIでメール送信
+    service_gmail = mod_gmail_api.get_gmail_service()
+    if service_gmail is not None:
+        # マルチパートメッセージを作成
+        message_obj = MIMEMultipart()
+        message_obj["to"] = to_email
+        message_obj["from"] = from_email
+        message_obj["subject"] = subject
 
-    # file from GCS
-    blob = storage.Blob(file_name, bucket)
-    content = blob.download_as_string()
-    gcs_file = base64.b64encode(content).decode()
+        # テキスト部分を追加
+        text_part = MIMEText(body, "plain", "utf-8")
+        message_obj.attach(text_part)
 
-    # attach file
-    attach_file = Attachment(
-        FileContent(gcs_file),
-        FileName(send_file_name),
-        FileType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-        Disposition("attachment"),
-        ContentId(send_file_name),
-    )
-    mail_con.attachment = attach_file
+        # file from GCS
+        blob = storage.Blob(file_name, bucket)
+        content = blob.download_as_string()
 
-    # send
-    sg = SendGridAPIClient(fs_dic["sendgrid_api_key"])
-    sg.send(mail_con)
+        # 添付ファイルを追加
+        attachment = MIMEBase("application", "vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        attachment.set_payload(content)
+        encoders.encode_base64(attachment)
+        # 日本語ファイル名対応：RFC 2231形式でエンコード
+        attachment.add_header("Content-Disposition", "attachment", filename=("utf-8", "", send_file_name))
+        message_obj.attach(attachment)
+
+        # Base64エンコード
+        raw_message = base64.urlsafe_b64encode(message_obj.as_bytes()).decode("utf-8")
+
+        # メール送信
+        try:
+            result = service_gmail.users().messages().send(userId="me", body={"raw": raw_message}).execute()
+            print(f"fee_chk メール送信成功: {result}")
+        except Exception as e:
+            print(f"fee_chk メール送信エラー: {e}")
+            import traceback
+
+            print(f"fee_chk 詳細エラー: {traceback.format_exc()}")
 
     # base - level 2 - access log only
     acc_page_name = sys._getframe().f_code.co_name
