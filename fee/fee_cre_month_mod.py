@@ -9,10 +9,14 @@ def mz_del(nyu_date_int):
     return
 
 
-# create
+# create - バルクINSERTで高速化
 def mz_cre(nyu_date_int):
     exe_cnt = 0
     sql_data = fee_cre_month_sql.mz_sql_fee_order_store(nyu_date_int)
+
+    # バルクINSERT用のデータリスト
+    bulk_insert_data = []
+
     for dt in sql_data:
         # fee率、fee円を計算、ボーナスの場合の計算
         fee_send_dic = {
@@ -76,171 +80,257 @@ def mz_cre(nyu_date_int):
         section_cd_email2 = dt["section_cd_email2"]
         section_cd_email3 = dt["section_cd_email3"]
 
+        # データを配列に追加（条件に応じて）
         stf_list = [1, 2, 3, 4, 5, 6]
-        insert_exe = "no"
 
         for stf in stf_list:
-            if stf == 1 and fee_staff1 != 0.0:
-                insert_exe = "yes"
-                pay_person_kind = "main"
-                section_cd_email = section_cd_email1
-                pay_person_cd = staff1_cd
-                pay_person_email = staff1_email
-                pay_fee_per = fee_rtn_dic["fee_staff1"]
-                pay_fee_yen = fee_rtn_dic["fee_staff1_yen"]
-                pay_gyotei_cd = 0
-            if stf == 2 and fee_staff2 != 0.0:
-                insert_exe = "yes"
-                pay_person_kind = "sub"
-                section_cd_email = section_cd_email2
-                pay_person_cd = staff2_cd
-                pay_person_email = staff2_email
-                pay_fee_per = fee_rtn_dic["fee_staff2"]
-                pay_fee_yen = fee_rtn_dic["fee_staff2_yen"]
-                pay_gyotei_cd = 0
-            if stf == 3 and fee_staff3 != 0.0:
-                insert_exe = "yes"
-                pay_person_kind = "sub"
-                section_cd_email = section_cd_email3
-                pay_person_cd = staff3_cd
-                pay_person_email = staff3_email
-                pay_fee_per = fee_rtn_dic["fee_staff3"]
-                pay_fee_yen = fee_rtn_dic["fee_staff3_yen"]
-                pay_gyotei_cd = 0
-            if stf == 4 and gyotei1_cd != "99990001":
-                insert_exe = "yes"
-                pay_person_kind = "gyotei1"
-                section_cd_email = section_cd_email1
-                pay_person_cd = staff1_cd  # 提携の場合でも主担当をセット
-                pay_person_email = staff1_email
-                pay_fee_per = fee_rtn_dic["fee_gyotei1"]
-                pay_fee_yen = fee_rtn_dic["fee_gyotei1_yen"]
-                pay_gyotei_cd = gyotei1_cd
-            if stf == 5 and gyotei2_cd != "99990001":
-                insert_exe = "yes"
-                pay_person_kind = "gyotei2"
-                section_cd_email = section_cd_email1
-                pay_person_cd = staff1_cd  # 提携の場合でも主担当をセット
-                pay_person_email = staff1_email
-                pay_fee_per = fee_rtn_dic["fee_gyotei2"]
-                pay_fee_yen = fee_rtn_dic["fee_gyotei2_yen"]
-                pay_gyotei_cd = gyotei2_cd
-            if stf == 6 and gyotei3_cd != "99990001":
-                insert_exe = "yes"
-                pay_person_kind = "gyotei3"
-                section_cd_email = section_cd_email1
-                pay_person_cd = staff1_cd  # 提携の場合でも主担当をセット
-                pay_person_email = staff1_email
-                pay_fee_per = fee_rtn_dic["fee_gyotei3"]
-                pay_fee_yen = fee_rtn_dic["fee_gyotei3_yen"]
-                pay_gyotei_cd = gyotei3_cd
+            insert_data = None
 
-            # ------------------------------------------------------------------------------------------
-            # insert sql
-            if insert_exe == "yes":
-                sql_con = sql_config.mz_sql_con()
-                with sql_con:
-                    sql = """
-                    INSERT INTO sql_fee_order_store (
-                        nyu_nendo,
-                        nyu_date,
-                        kind_cd,
-                        cat_cd,
-                        coltd_cd,
-                        siki_date,
-                        manki_date,
-                        kind_cd_main,
-                        kind_cd_sub,
-                        pay_num_cd,
-                        hoken_kikan_cd,
-                        hoken_kikan_year,
-                        syoken_cd_main,
-                        syoken_cd_sub,
-                        hoken_ryo,
-                        fee_num,
-                        section_cd,
-                        section_cd_email,
-                        pay_person_kind,
-                        pay_person_cd,
-                        pay_person_email,
-                        pay_fee_per,
-                        pay_fee_yen,
-                        pay_gyotei_cd,
-                        kei_name,
-                        pay_gyotei_1year_over,
-                        kaime,
-                        fee_memo,
-                        first_next_year
-                    ) VALUES (
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s,
-                        %s
-                    );
-                    """
-                    cur = sql_con.cursor()
-                    cur.execute(
-                        sql,
-                        (
-                            nyu_nendo,
-                            nyu_date,
-                            kind_cd,
-                            cat_cd,
-                            coltd_cd,
-                            siki_date,
-                            manki_date,
-                            kind_cd_main,
-                            kind_cd_sub,
-                            pay_num_cd,
-                            hoken_kikan_cd,
-                            hoken_kikan_year,
-                            syoken_cd_main,
-                            syoken_cd_sub,
-                            hoken_ryo,
-                            fee_num,
-                            section_cd,
-                            section_cd_email,
-                            pay_person_kind,
-                            pay_person_cd,
-                            pay_person_email,
-                            pay_fee_per,
-                            pay_fee_yen,
-                            pay_gyotei_cd,
-                            kei_name,
-                            pay_gyotei_1year_over,
-                            kaime,
-                            fee_memo,
-                            first_next_year,
-                        ),
-                    )
-                    sql_con.commit()
-                    exe_cnt += 1
-                    insert_exe = "no"
+            if stf == 1 and fee_staff1 != 0.0:
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email1,
+                    "main",
+                    staff1_cd,
+                    staff1_email,
+                    fee_rtn_dic["fee_staff1"],
+                    fee_rtn_dic["fee_staff1_yen"],
+                    0,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+            elif stf == 2 and fee_staff2 != 0.0:
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email2,
+                    "sub",
+                    staff2_cd,
+                    staff2_email,
+                    fee_rtn_dic["fee_staff2"],
+                    fee_rtn_dic["fee_staff2_yen"],
+                    0,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+            elif stf == 3 and fee_staff3 != 0.0:
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email3,
+                    "sub",
+                    staff3_cd,
+                    staff3_email,
+                    fee_rtn_dic["fee_staff3"],
+                    fee_rtn_dic["fee_staff3_yen"],
+                    0,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+            elif stf == 4 and gyotei1_cd != "99990001":
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email1,
+                    "gyotei1",
+                    staff1_cd,  # 可読性のため重複
+                    staff1_email,
+                    fee_rtn_dic["fee_gyotei1"],
+                    fee_rtn_dic["fee_gyotei1_yen"],
+                    gyotei1_cd,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+            elif stf == 5 and gyotei2_cd != "99990001":
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email1,
+                    "gyotei2",
+                    staff1_cd,  # 可読性のため重複
+                    staff1_email,
+                    fee_rtn_dic["fee_gyotei2"],
+                    fee_rtn_dic["fee_gyotei2_yen"],
+                    gyotei2_cd,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+            elif stf == 6 and gyotei3_cd != "99990001":
+                insert_data = (
+                    nyu_nendo,
+                    nyu_date,
+                    kind_cd,
+                    cat_cd,
+                    coltd_cd,
+                    siki_date,
+                    manki_date,
+                    kind_cd_main,
+                    kind_cd_sub,
+                    pay_num_cd,
+                    hoken_kikan_cd,
+                    hoken_kikan_year,
+                    syoken_cd_main,
+                    syoken_cd_sub,
+                    hoken_ryo,
+                    fee_num,
+                    section_cd,
+                    section_cd_email1,
+                    "gyotei3",
+                    staff1_cd,  # 可読性のため重複
+                    staff1_email,
+                    fee_rtn_dic["fee_gyotei3"],
+                    fee_rtn_dic["fee_gyotei3_yen"],
+                    gyotei3_cd,
+                    kei_name,
+                    pay_gyotei_1year_over,
+                    kaime,
+                    fee_memo,
+                    first_next_year,
+                )
+
+            if insert_data:
+                bulk_insert_data.append(insert_data)
+                exe_cnt += 1
+
+    # バルクINSERT実行（全データを一度にINSERT）
+    if bulk_insert_data:
+        sql_con = sql_config.mz_sql_con()
+        with sql_con:
+            sql = """
+            INSERT INTO sql_fee_order_store (
+                nyu_nendo,
+                nyu_date,
+                kind_cd,
+                cat_cd,
+                coltd_cd,
+                siki_date,
+                manki_date,
+                kind_cd_main,
+                kind_cd_sub,
+                pay_num_cd,
+                hoken_kikan_cd,
+                hoken_kikan_year,
+                syoken_cd_main,
+                syoken_cd_sub,
+                hoken_ryo,
+                fee_num,
+                section_cd,
+                section_cd_email,
+                pay_person_kind,
+                pay_person_cd,
+                pay_person_email,
+                pay_fee_per,
+                pay_fee_yen,
+                pay_gyotei_cd,
+                kei_name,
+                pay_gyotei_1year_over,
+                kaime,
+                fee_memo,
+                first_next_year
+            ) VALUES (
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s
+            );
+            """
+            cur = sql_con.cursor()
+            cur.executemany(sql, bulk_insert_data)  # executemanyでバルクINSERT
+            sql_con.commit()
+
     return exe_cnt
 
 
